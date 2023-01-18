@@ -36,5 +36,13 @@ public class RecordingService {
         recordingRepository.save(recording);
     }
 
-    
+    public void deleteRecording(Long recordingId) {
+        Optional<AnalyzedRecording> recordingOptional = recordingRepository.findById(recordingId);
+
+        if (!recordingOptional.isPresent()) {
+            throw new IllegalStateException("There is no recording with an ID of " + recordingId + "!");
+        }
+
+        recordingRepository.delete(recordingOptional.get());
+    }
 }
