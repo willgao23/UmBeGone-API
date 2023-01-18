@@ -26,5 +26,15 @@ public class RecordingService {
         return recording;
     }
 
+    public void addRecording(AnalyzedRecording recording) {
+        Optional<AnalyzedRecording> recordingOptional = recordingRepository.findRecordingById(recording.getId());
+
+        if(recordingOptional.isPresent()) {
+            throw new IllegalStateException("A recording already exists with an ID of " + recording.getId() + "!");
+        }
+
+        recordingRepository.save(recording);
+    }
+
     
 }
