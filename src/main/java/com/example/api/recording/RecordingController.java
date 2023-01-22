@@ -8,6 +8,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping (path = "recording-api")
@@ -26,12 +28,31 @@ public class RecordingController {
     }
 
     @PostMapping(value = "/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<AnalyzedRecording> addRecording(@RequestParam MultipartFile file) throws IOException {
-        InputStream recording = file.getInputStream();
-        AnalyzedRecording analyzedRecording = new AnalyzedRecording(recording);
-        recordingService.addRecording(analyzedRecording);
+    public ResponseEntity<List<AnalyzedRecording>> addRecording(@RequestParam MultipartFile[] files) throws IOException {
+        List<AnalyzedRecording> analyzedRecordings = new ArrayList<AnalyzedRecording>();
+        ArrayList<RecordingThread> recordingThreads = new ArrayList<RecordingThread>();
 
-        return ResponseEntity.ok(analyzedRecording);
+        for (MultipartFile file : files) {
+            InputStream recording = file.getInputStream();
+            RecordingThread recordingThread = new RecordingThread(recording);
+            recordingThread.start();
+            recordingThreads.add(recordingThread);
+        }
+
+        for(RecordingThread thread : recordingThreads) {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        for(RecordingThread thread : recordingThreads) {
+            recordingService.addRecording(thread.getRecording());
+            analyzedRecordings.add(thread.getRecording());
+        }
+
+        return ResponseEntity.ok(analyzedRecordings);
     }
 
     @DeleteMapping (path = "/{recordingId}")
